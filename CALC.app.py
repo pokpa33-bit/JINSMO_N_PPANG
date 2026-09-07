@@ -54,7 +54,7 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
         # [동타 처리 및 우선순위 정렬 규칙 반영] 1순위 타수 오름차순, 2순위 핸디 오름차순
         sorted_df = valid_df.sort_values(by=["금일타수", "G핸디"], ascending=True).reset_index(drop=True)
         
-        # 총 스크린골프 비용 (인당 14,000원) 및 국밥 비용 (인당 7,000원)
+        # 총 스크린골프 비용 (인당 14,000원) 및 국밥 비용 (인당 7,000원) 계산
         total_golf_budget = total_players * 14000
         total_meal_budget = total_players * 7000
         total_overall_budget = total_golf_budget + total_meal_budget
@@ -63,9 +63,16 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
         result_text += f"금일 모임(총 {total_players}명) 하이브리드 정산 내역입니다.\n"
         result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n"
         result_text += f"원칙: 1등 16,000원 고정 / 하위 등수 최대 26,000원 한도 제한 적용\n\n"
+        
+        # ⭐ 형님 요청: 밥값, 스크린비 총액 정리 부분 추가
+        result_text += f"💰 [금일 지출 총액 내역]\n"
+        result_text += f"  - 스크린골프 총액: {total_golf_budget:,}원 ({total_players}명 × 14,000원)\n"
+        result_text += f"  - 식사(국밥) 총액: {total_meal_budget:,}원 ({total_players}명 × 7,000원)\n"
+        result_text += f"  👉 모임 전체 합산 총액: {total_overall_budget:,}원\n\n"
+        
         result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        pay_amounts = [0] * total_players
+        pay_amounts = * total_players
         pay_types = [""] * total_players
         
         # 인원수별 하위 그룹(현금 송금조) 인원 배분 규칙
@@ -124,13 +131,13 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
                 
         # 총무 검증용 테이블 출력
         result_text += f"\n📊 [총무 정산 검증 테이블]\n"
-        result_text += f"  - 걷히는 현금 총액: {cash_total:,}원\n"
-        result_text += f"  - 식당 카드 결제 총액: {card_total:,}원\n"
-        result_text += f"  - 정산 정합성: 총 {cash_total+card_total:,}원 정산 처리 완료\n"
-        result_text += "\n</div>🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
+        result_text += f"  - 실제 걷히는 현금 총액: {cash_total:,}원\n"
+        result_text += f"  - 실제 식당 카드 결제 총액: {card_total:,}원\n"
+        result_text += f"  - 실제 정산 처리 합산액: {cash_total+card_total:,}원\n"
+        result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
         result_text += "\n⚠️ 식당 카드 결제 인원은 식당 계산대에서 위 금액만큼 결제해 주시면 됩니다."
         result_text += "\n\n오늘 모두 고생 많으셨습니다! 즐거운 하루 되세요. ⛳️"
         
         st.subheader("✨ 자동 정산 결과")
-        st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=420)
-        st.success("진스모 전용 통합 하이브리드 정산 프로그램 세팅이 전면 완료되었습니다!")
+        st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=450)
+        st.success("총액 내역이 포함된 진스모 하이브리드 정산 양식이 업데이트되었습니다!")
