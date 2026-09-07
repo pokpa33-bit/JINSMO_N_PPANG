@@ -64,7 +64,7 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
         result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n"
         result_text += f"원칙: 1등 16,000원 고정 / 하위 등수 최대 26,000원 한도 제한 적용\n\n"
         
-        # ⭐ 형님 요청: 밥값, 스크린비 총액 정리 부분 추가
+        # 밥값, 스크린비 총액 정리 부분 출력
         result_text += f"💰 [금일 지출 총액 내역]\n"
         result_text += f"  - 스크린골프 총액: {total_golf_budget:,}원 ({total_players}명 × 14,000원)\n"
         result_text += f"  - 식사(국밥) 총액: {total_meal_budget:,}원 ({total_players}명 × 7,000원)\n"
@@ -72,7 +72,8 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
         
         result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        pay_amounts = * total_players
+        # ⭐ 오타 수정 완료 부분 ([0] 리스트 정상 생성)
+        pay_amounts = [0] * total_players
         pay_types = [""] * total_players
         
         # 인원수별 하위 그룹(현금 송금조) 인원 배분 규칙
@@ -126,7 +127,7 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
                 result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ {amt:,}원 [총무 계좌 송금]\n"
                 cash_total += amt
             else:
-                result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ {amt:,}원 [식당 카드 결제]\n"
+                result_text += f"  - {rank}등: {name} (타수:{score}/핵디:{handi}) ➡️ {amt:,}원 [식당 카드 결제]\n"
                 card_total += amt
                 
         # 총무 검증용 테이블 출력
