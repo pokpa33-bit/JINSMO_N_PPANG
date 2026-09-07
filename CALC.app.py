@@ -4,13 +4,13 @@ import pandas as pd
 st.set_page_config(page_title="진스모 정산기", layout="centered", page_icon="⛳️")
 
 # 웹사이트 상단 타이틀 및 설명
-st.title("⛳️ JINSMO N_PPANG 자동 정산기")
+st.title("⛳️ JINSMO N_PPANG 최종 정산기")
 
 # 계좌번호 상시 고정
 st.success("🏦 **[총무 계좌안내] 카카오뱅크 3333358864688 박대환**")
 
-st.write("구성원의 이름, G핸디, 금일타수를 입력하면 순위와 금액이 자동 계산됩니다.")
-st.write("💡 **동타일 경우 G핸디가 낮은 사람이 우선순위가 됩니다.**")
+st.write("구성원의 이름, G핸디, 금일타수를 입력하면 순위와 정산 금액이 자동 계산됩니다.")
+st.write("💡 **1등 16,000원 고정 / 하위 등수 최대 26,000원 한도 고정 규칙 적용**")
 
 # 1. 초기 샘플 데이터 세팅
 init_data = [
@@ -26,8 +26,8 @@ if "df_data" not in st.session_state:
 st.subheader("📋 참석자 명단 입력")
 
 # 인원 추가 및 삭제 가이드 강력 강조
-st.error("🚨 **[필독] 인원 추가 방법: 명단 표 맨 아래 왼쪽의 [+] 버튼을 누르면 줄이 늘어납니다!**")
-st.warning("🗑️ **[필독] 실수로 만든 줄 삭제 방법: 지우고 싶은 줄(행)을 마우스나 손가락으로 한 번 터치(선정)한 후, 키보드의 [Delete] 또는 [Backspace] 키를 누르면 즉시 지워집니다!**")
+st.error("🚨 **[필독] 인원 추가: 명단 표 맨 아래 왼쪽의 [+] 버튼을 누르세요!**")
+st.warning("🗑️ **[필독] 줄 삭제: 줄을 선택한 후 키보드의 [Delete] 또는 [Backspace]를 누르세요!**")
 
 if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
     st.session_state.df_data = pd.DataFrame([{"이름": "", "G핸디": 0.0, "금일타수": 0}])
@@ -43,76 +43,94 @@ def round_to_thousand(amount):
     return int(round(amount / 1000) * 1000)
 
 # 2. 계산 및 정산문구 생성 버튼
-if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="primary"):
+if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary"):
     valid_df = edited_df.dropna(subset=["이름"])
     valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
-    
     total_players = len(valid_df)
     
     if total_players == 0:
         st.error("참석자를 최소 1명 이상 정확히 입력해 주세요.")
     else:
-        # [동타 처리 및 우선순위 정렬 규칙 반영]
+        # [동타 처리 및 우선순위 정렬 규칙 반영] 1순위 타수 오름차순, 2순위 핸디 오름차순
         sorted_df = valid_df.sort_values(by=["금일타수", "G핸디"], ascending=True).reset_index(drop=True)
         
-        # 인당 기본 비용 (스크린 14,000원 + 밥값 6,900원 = 20,900원)
-        base_golf = 14000
-        base_meal = 6900
-        total_per_person = base_golf + base_meal
-        total_budget = total_players * total_per_person
+        # 총 스크린골프 비용 (인당 14,000원) 및 국밥 비용 (인당 7,000원)
+        total_golf_budget = total_players * 14000
+        total_meal_budget = total_players * 7000
+        total_overall_budget = total_golf_budget + total_meal_budget
         
-        result_text = f"[진스모 새벽모임 정산 안내]\n\n"
-        result_text += f"금일 모임(총 {total_players}명) 스크린골프비 및 밥값 일괄 정산 내역입니다.\n"
-        result_text += f"총액: {total_budget:,}원 (인당 기본 {total_per_person:,}원 산정)\n"
-        result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n\n"
-        result_text += "🏆 최종 성적 및 입금 금액\n"
+        result_text = f"[진스모 새벽모임 최종 정산 안내]\n\n"
+        result_text += f"금일 모임(총 {total_players}명) 하이브리드 정산 내역입니다.\n"
+        result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n"
+        result_text += f"원칙: 1등 16,000원 고정 / 하위 등수 최대 26,000원 한도 제한 적용\n\n"
+        result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        # 등수별 금액 할당 로직 (요청 반영: 4인 기준 하위 26,000원 절대 고정)
+        pay_amounts = [0] * total_players
+        pay_types = [""] * total_players
+        
+        # 인원수별 하위 그룹(현금 송금조) 인원 배분 규칙
+        if total_players == 10:
+            bottom_count = 4
+        elif total_players == 7:
+            bottom_count = 2
+        elif total_players == 4:
+            bottom_count = 1
+        else:
+            bottom_count = max(1, int(total_players * 0.3))
+            
+        middle_indices = []
+        collected_cash = 0
+        
+        # 1차 패스: 고정 현금 그룹 먼저 확정
+        for idx in range(total_players):
+            rank = idx + 1
+            if rank == 1:
+                pay_amounts[idx] = 16000
+                pay_types[idx] = "현금 송금"
+                collected_cash += 16000
+            elif rank > (total_players - bottom_count):
+                pay_amounts[idx] = 26000  # 하위 등수 무조건 26,000원 한도 고정
+                pay_types[idx] = "현금 송금"
+                collected_cash += 26000
+            else:
+                middle_indices.append(idx)
+                pay_types[idx] = "식당 카드 결제"
+                
+        # 2차 패스: 중간 그룹 카드 분담액 자동 역산 및 사사오입
+        if middle_indices:
+            remaining_budget = total_overall_budget - collected_cash
+            per_middle_card = remaining_budget / len(middle_indices)
+            rounded_card_amount = round_to_thousand(per_middle_card)
+            for m_idx in middle_indices:
+                pay_amounts[m_idx] = rounded_card_amount
+
+        # 텍스트 출력 빌드
+        cash_total = 0
+        card_total = 0
         for idx, row in sorted_df.iterrows():
             rank = idx + 1
             name = row["이름"]
             handi = row["G핸디"]
             score = row["금일타수"]
+            amt = pay_amounts[idx]
+            ptype = pay_types[idx]
             
-            # 정확히 3명일 때
-            if total_players == 3:
-                if rank == 1: pay_amount = 16000
-                elif rank == 2: pay_amount = 22000
-                else: pay_amount = 26000
-                
-            # ⭐ 4명일 때 (요청 반영: 하위 순위 무조건 26,000원 고정 구조)
-            elif total_players == 4:
-                if rank == 1: pay_amount = 16000
-                elif rank == 2 or rank == 3: pay_amount = 22000
-                else: pay_amount = 26000  # 4등 26,000원 무조건 고정
-                
-            # 7명일 때 (상위 2명 16,000원 고정 / 하위 2명 26,000원 고정 / 중간 3명은 사사오입 계산)
-            elif total_players == 7:
-                if rank == 1 or rank == 2:
-                    pay_amount = 16000
-                elif rank == 6 or rank == 7:
-                    pay_amount = 26000
-                else:
-                    rem_budget = total_budget - (16000 * 2) - (26000 * 2)
-                    pay_amount = round_to_thousand(rem_budget / 3)
-                    
-            # 그 외 13명~15명 대규모 인원일 때 상위/하위 33% 적용 로직
+            if ptype == "현금 송금":
+                result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ {amt:,}원 [총무 계좌 송금]\n"
+                cash_total += amt
             else:
-                group_size = total_players // 3
-                if rank <= group_size:
-                    pay_amount = 16000
-                elif rank > total_players - group_size:
-                    pay_amount = 26000
-                else:
-                    middle_players = total_players - (group_size * 2)
-                    rem_budget = total_budget - (16000 * group_size) - (26000 * group_size)
-                    pay_amount = round_to_thousand(rem_budget / middle_players)
+                result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ {amt:,}원 [식당 카드 결제]\n"
+                card_total += amt
                 
-            result_text += f"  - {rank}등: {name} (타수:{score} / 핸디:{handi}) ➡️ {pay_amount:,}원\n"
-            
-        result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
-        result_text += "\n\n당일 원활한 정산을 위해 확인하시는 대로 빠른 입금 부탁드립니다. 오늘 모두 고생 많으셨습니다! ⛳️"
+        # 총무 검증용 테이블 출력
+        result_text += f"\n📊 [총무 정산 검증 테이블]\n"
+        result_text += f"  - 걷히는 현금 총액: {cash_total:,}원\n"
+        result_text += f"  - 식당 카드 결제 총액: {card_total:,}원\n"
+        result_text += f"  - 정산 정합성: 총 {cash_total+card_total:,}원 정산 처리 완료\n"
+        result_text += "\n</div>🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
+        result_text += "\n⚠️ 식당 카드 결제 인원은 식당 계산대에서 위 금액만큼 결제해 주시면 됩니다."
+        result_text += "\n\n오늘 모두 고생 많으셨습니다! 즐거운 하루 되세요. ⛳️"
         
         st.subheader("✨ 자동 정산 결과")
-        st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=350)
-        st.success("정산 문구 생성이 완료되었습니다! 복사해서 단톡방에 공유하세요.")
+        st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=420)
+        st.success("진스모 전용 통합 하이브리드 정산 프로그램 세팅이 전면 완료되었습니다!")
