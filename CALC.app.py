@@ -50,14 +50,6 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         total_meal_budget = total_players * 6900
         total_overall_budget = total_golf_budget + total_meal_budget
         
-        # 인원수별 상위 및 하위 비율 배분 (상위 30%, 하위 30%)
-        if total_players == 4: top_count, bottom_count = 1, 1
-        elif total_players == 7: top_count, bottom_count = 2, 2
-        elif total_players == 10: top_count, bottom_count = 3, 4
-        else:
-            top_count = max(1, int(total_players * 0.3))
-            bottom_count = max(1, int(total_players * 0.3))
-            
         result_text = f"[진스모 새벽모임 최종 정산 안내]\n\n"
         result_text += f"금일 모임(총 {total_players}명) 지출 상한선 잠금형 하이브리드 정산 내역입니다.\n"
         result_text += f"원칙: 상위조 국밥 2인분(13,800원) 결제 / 하위조 인당 최대 지출 26,000원 상한 차단 / 잔여 금액 중간조 분담\n\n"
@@ -69,9 +61,17 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         
         result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        # 배열 리스트 초기화 문법 보정 완료
-        golf_pays = * total_players
-        meal_pays = * total_players
+        # 💡 [문법 에러 완벽 수정] 대괄호 안에 기본값 0을 기입하여 파이썬 리스트 생성
+        golf_pays = [0] * total_players
+        meal_pays = [0] * total_players
+        
+        if total_players == 4: top_count, bottom_count = 1, 1
+        elif total_players == 7: top_count, bottom_count = 2, 2
+        elif total_players == 10: top_count, bottom_count = 3, 4
+        else:
+            top_count = max(1, int(total_players * 0.3))
+            bottom_count = max(1, int(total_players * 0.3))
+            
         middle_indices = []
         
         # 1차 패스: 상위권 및 하위권 고정 상한선 락(Lock) 세팅
@@ -81,7 +81,7 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
                 golf_pays[idx] = 0
                 meal_pays[idx] = 13800  # 상위조 13,800원 카드결제 고정 (최종 13,800원)
             elif rank > (total_players - bottom_count):
-                golf_pays[idx] = 26000  # 🛑 하위조 최대 지출 26,000원 현금송금 고정
+                golf_pays[idx] = 26000  # 하위조 최대 지출 26,000원 현금송금 고정
                 meal_pays[idx] = 0      # 식당 카드결제 면제
             else:
                 middle_indices.append(idx)
@@ -135,4 +135,4 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         
         st.subheader("✨ 자동 정산 결과")
         st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=450)
-        st.success("인당 최대 26,000원 상한 락 하이브리드 정산 시스템 세팅이 완료되었습니다!")
+        st.success("인당 최대 26,000원 상한 락 하이브리드 정산 시스템 세팅이 최종 완료되었습니다!")
