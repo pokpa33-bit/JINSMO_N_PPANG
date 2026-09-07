@@ -62,8 +62,9 @@ if st.button("🏆 진스모 중복 제로 정산문구 생성", type="primary")
         
         result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        golf_pays = * total_players
-        meal_pays = * total_players
+        # 💡 에러 완벽 수정: 배열 초기화 문법 보정
+        golf_pays = [0] * total_players
+        meal_pays = [0] * total_players
         
         card_count = min(3, total_players)
         cash_paying_count = total_players - card_count
@@ -108,7 +109,7 @@ if st.button("🏆 진스모 중복 제로 정산문구 생성", type="primary")
             card_total += m_p
                 
         result_text += f"\n📊 [총무 정산 검증 테이블]\n"
-        result_text += f"  - 실제 걷히는 현금 총액: {cash_total:,}원 (스크린비 총액 {total_golf_budget:,}원과 오차 0원 완벽 일치!)\n"
+        result_text += f"  - 실제 걷히는 현금 총액: {cash_total:,}원 (스크린비 {total_golf_budget:,}원과 오차 0원 완벽 일치!)\n"
         result_text += f"  - 실제 식당 카드 결제 총액: {card_total:,}원 (국밥 대금 {total_meal_budget:,}원과 오차 0원 완벽 일치!)\n"
         result_text += f"  👉 정산 결과: 총무 주머니에 남거나 모자라는 현금은 정확히 [ 0원 ] 입니다.\n"
         result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
