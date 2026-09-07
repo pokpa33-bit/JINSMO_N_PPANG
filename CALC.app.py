@@ -73,7 +73,7 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
                 
             result_text += f"  - {rank}등: {name} (타수:{score} / 핸디:{handi}) ➡️ {pay_amount:,}원\n"
             
-        result_text += "\n🏦 입금 계좌: [총무님 은행 및 계좌번호를 적어주세요]"
+        result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
         result_text += "\n\n당일 원활한 정산을 위해 확인하시는 대로 빠른 입금 부탁드립니다. 오늘 모두 고생 많으셨습니다! ⛳️"
         
         # 웹 화면에 최종 정산 결과 박스 띄우기
