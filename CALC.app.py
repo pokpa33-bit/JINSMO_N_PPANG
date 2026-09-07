@@ -17,7 +17,11 @@ init_data = [
 df = pd.DataFrame(init_data)
 
 st.subheader("📋 참석자 명단 입력")
-st.info("💡 표 아래의 **[+]** 버튼을 눌러 인원을 추가할 수 있습니다. 칸을 더블클릭하여 내용을 수정하세요.")
+
+# ⭐ 인원추가 안내 문구 강력 강조 (빨간색 경고 상자 스타일 적용)
+st.error("🚨 **[필독] 인원 추가 방법: 명단 표 맨 아래 왼쪽의 [+] 버튼을 누르면 줄이 늘어납니다!**")
+st.info("💡 각 칸을 더블클릭하면 이름, 핸디, 타수를 수정할 수 있습니다.")
+
 edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
 # 2. 계산 및 정산문구 생성 버튼
