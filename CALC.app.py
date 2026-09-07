@@ -8,8 +8,8 @@ st.title("⛳️ JINSMO N_PPANG 영구 마스터 정산기")
 st.success("🏦 **[총무 계좌안내] 카카오뱅크 3333358864688 박대환**")
 
 st.write("구성원의 이름, G핸디, 금일타수를 입력하면 순위와 정산 금액이 자동 계산됩니다.")
-st.write("💡 **[진스모 절대 규칙] 스크린비 원금(인당 14,000원)은 무조건 현금 총액으로 100% 온전히 확보됩니다.**")
-st.write("💡 **1·2등 국밥 2그릇(13,800원) / 3등 국밥 3그릇 벌칙(20,700원) / 나머지 조원 스크린비 전액 균등 현금 엔빵**")
+st.write("💡 **[최종 절대 규칙] 1·2등 국밥 2그릇(13,800원) / 3등 국밥 3그릇 벌칙(20,700원) / 나머지 조원 스크린비 균등 현금 송금**")
+st.write("💡 **[오차 0원 잠금] 실제 매장 지출 총액(원금)과 회원 분담 합산액이 원 단위까지 100% 무조건 일치합니다.**")
 
 init_data = [
     {"이름": "홍기동", "G핸디": -0.1, "금일타수": 77},
@@ -32,7 +32,7 @@ if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
 edited_df = st.data_editor(st.session_state.df_data, num_rows="dynamic", use_container_width=True)
 st.session_state.df_data = edited_df
 
-if st.button("🏆 진스모 중복 제로 정산문구 생성", type="primary"):
+if st.button("🏆 진스모 오차 제로 정산문구 생성", type="primary"):
     valid_df = edited_df.dropna(subset=["이름"])
     valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
     total_players = len(valid_df)
@@ -45,24 +45,23 @@ if st.button("🏆 진스모 중복 제로 정산문구 생성", type="primary")
         # [동타 처리 및 우선순위 정렬 규칙 반영] 1순위 타수 오름차순, 2순위 핸디 오름차순
         sorted_df = valid_df.sort_values(by=["금일타수", "G핸디"], ascending=True).reset_index(drop=True)
         
-        # 총 스크린 매장비 원금 철저 보장 계산
+        # 실제 매장 청구 원금 계산 (100% 정합성 기준)
         total_golf_budget = total_players * 14000
         total_meal_budget = total_players * 6900
         total_overall_budget = total_golf_budget + total_meal_budget
         
         result_text = f"[진스모 새벽모임 최종 정산 안내]\n\n"
-        result_text += f"금일 모임(총 {total_players}명) 오리지널 최종 마스터 정산 내역입니다.\n"
-        result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n"
+        result_text += f"금일 모임(총 {total_players}명) 오차 제로 완벽 마감 정산 내역입니다.\n"
         result_text += f"원칙: 1·2등 국밥 2그릇(13,800원) / 3등 국밥 3그릇 벌칙(20,700원) / 나머지 조원 스크린비 균등 현금 송금\n\n"
         
-        result_text += f"💰 [금일 매장 실제 지출 총액]\n"
-        result_text += f"  - 스크린골프 총액: {total_golf_budget:,}원 (송금조 현금으로 100% 정액 회수)\n"
-        result_text += f"  - 식사(국밥) 총액: {total_meal_budget:,}원 (카드조 결제액으로 100% 정액 처리)\n"
-        result_text += f"  👉 모임 전체 합산 총액: {total_overall_budget:,}원\n\n"
+        result_text += f"💰 [금일 매장 실제 지출 총액 원금]\n"
+        result_text += f"  - 스크린골프 총액: {total_golf_budget:,}원 (송금조 현금 회수액과 100% 일치)\n"
+        result_text += f"  - 식사(국밥) 총액: {total_meal_budget:,}원 (카드조 결제액과 100% 일치)\n"
+        result_text += f"  👉 모임 합산 총 정산액: {total_overall_budget:,}원\n\n"
         
         result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        # 💡 에러 완벽 수정: 배열 초기화 문법 보정
+        # 💡 리스트 초기화 문법 완벽 수정 완료
         golf_pays = [0] * total_players
         meal_pays = [0] * total_players
         
@@ -83,11 +82,11 @@ if st.button("🏆 진스모 중복 제로 정산문구 생성", type="primary")
                 golf_pays[idx] = int(total_golf_budget / cash_paying_count)
                 meal_pays[idx] = 0
                 
-        # 1원 단위 최종 단수 오차 보정 (현금 오차 zero 락킹)
+        # 💡 [핵심 알고리즘] 1원 단위 최종 단수 오차를 마지막 등수 인원에게 강제 합산하여 총액 불일치 버그 원천 차단
         if cash_paying_count > 0:
             golf_pays[-1] = total_golf_budget - sum(golf_pays[i] for i in range(total_players - 1))
         if card_count > 0:
-            # 인원 변동 시 식당 실비 총액에 어긋나지 않도록 3등 카드 결제액 최종 미세 연동 보정
+            # 인원 가변 시 식당 실비 총액에 어긋나지 않도록 3등 카드 결제액 최종 미세 자동 매칭
             meal_pays[min(2, total_players-1)] = total_meal_budget - sum(meal_pays[i] for i in range(total_players) if i != min(2, total_players-1))
 
         cash_total = 0
@@ -102,19 +101,22 @@ if st.button("🏆 진스모 중복 제로 정산문구 생성", type="primary")
             
             if g_p == 0:
                 bowl_str = "2그릇 고정 👑" if rank <= 2 else "3그릇 벌칙 고정 🚨"
-                result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [0원 면제] 🎉 + 국밥 {bowl_str} {m_p:,}원 [식당 카드결제]\n"
+                if m_p > 0:
+                    result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [0원 면제] 🎉 + 국밥 {bowl_str} {m_p:,}원 [식당 카드결제]\n"
+                else:
+                    result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [0원 면제] 🎉 + 국밥값 [0원 면제] (기부버프 혜택)\n"
             else:
                 result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 총무 계좌로 스크린비 [ {g_p:,}원 ] 송금 💵 (식당 결제 없음 ❌)\n"
             cash_total += g_p
             card_total += m_p
                 
-        result_text += f"\n📊 [총무 정산 검증 테이블]\n"
-        result_text += f"  - 실제 걷히는 현금 총액: {cash_total:,}원 (스크린비 {total_golf_budget:,}원과 오차 0원 완벽 일치!)\n"
-        result_text += f"  - 실제 식당 카드 결제 총액: {card_total:,}원 (국밥 대금 {total_meal_budget:,}원과 오차 0원 완벽 일치!)\n"
-        result_text += f"  👉 정산 결과: 총무 주머니에 남거나 모자라는 현금은 정확히 [ 0원 ] 입니다.\n"
+        result_text += f"\n📊 [총무 정산 검증 테이블 (오차 점검)]\n"
+        result_text += f"  - 회원 송금액 합계: {cash_total:,}원 ➡️ 매장 원금({total_golf_budget:,}원)과 오차 [ 0원 ] 완벽 일치!\n"
+        result_text += f"  - 회원 카드 결제 합계: {card_total:,}원 ➡️ 식당 원금({total_meal_budget:,}원)과 오차 [ 0원 ] 완벽 일치!\n"
+        result_text += f"  👉 최종 정산 결과: 총무 주머니에 남거나 모자라는 현금은 단 1원도 없는 [ 정확히 0원 ] 입니다.\n"
         result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
-        result_text += "\n⚠️ 식당 카드결제 조(1,2,3등)분들은 계산대에서 위 금액만큼 각자 카드로 결제해 주시면 오늘 정산은 완전히 종료됩니다."
+        result_text += "\n⚠️ 식당 계산대에서는 전원이 계산대에 본인 등수에 적혀있는 정확한 금액을 말씀하시고 개별 카드로 긁으시면 오늘 정산은 완벽히 마감됩니다."
         
         st.subheader("✨ 자동 정산 결과")
         st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=450)
-        st.success("진스모 스크린비 현금 백프로 확보 마스터 정산기가 개설 완료되었습니다!")
+        st.success("진스모 오차 제로 잠금 정산기 프로그램 배포가 전면 성공했습니다!")
