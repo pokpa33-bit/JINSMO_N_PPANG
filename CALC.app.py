@@ -53,19 +53,19 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
             
             # 7명 모임일 때 대화방 이미지 규칙 적용
             if total_players == 7:
-                if rank in: # 1등, 2등
+                if rank in:
                     pay_amount = 16000
-                elif rank in: # 3등, 4등, 5등
+                elif rank in:
                     pay_amount = 21000
-                else: # 6등, 7등
+                else:
                     pay_amount = 25650
             # 4명 모임일 때 대화방 이미지 규칙 적용
             elif total_players == 4:
-                if rank == 1: # 1등
+                if rank == 1:
                     pay_amount = 16000
-                elif rank in: # 2등, 3등
+                elif rank in:
                     pay_amount = 21000
-                else: # 4등
+                else:
                     pay_amount = 25600
             # 그 외 인원은 기본 균등 금액 적용 (당일 조율용)
             else:
