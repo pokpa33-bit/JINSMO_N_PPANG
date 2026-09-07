@@ -14,20 +14,32 @@ st.write("💡 **동타일 경우 G핸디가 낮은 사람이 우선순위가 �
 
 # 1. 초기 샘플 데이터 세팅
 init_data = [
-    {"이름": "회원1", "G핸디": 5.2, "금일타수": 78},
-    {"이름": "회원2", "G핸디": 3.1, "금일타수": 82},
-    {"이름": "회원3", "G핸디": 4.5, "금일타수": 78}
+    {"이름": "홍기동", "G핸디": -0.1, "금일타수": 77},
+    {"이름": "박대환", "G핸디": -0.2, "금일타수": 77},
+    {"이름": "유순창", "G핸디": -0.3, "금일타수": 77},
+    {"이름": "박두진", "G핸디": -0.4, "금일타수": 77}
 ]
-df = pd.DataFrame(init_data)
+
+# 세션 상태를 활용해 데이터 보존 및 초기화 기능 구현
+if "df_data" not in st.session_state:
+    st.session_state.df_data = pd.DataFrame(init_data)
 
 st.subheader("📋 참석자 명단 입력")
 
 # 인원 추가 및 삭제 가이드 강력 강조
 st.error("🚨 **[필독] 인원 추가 방법: 명단 표 맨 아래 왼쪽의 [+] 버튼을 누르면 줄이 늘어납니다!**")
 st.warning("🗑️ **[필독] 실수로 만든 줄 삭제 방법: 지우고 싶은 줄(행)을 마우스나 손가락으로 한 번 터치(선정)한 후, 키보드의 [Delete] 또는 [Backspace] 키를 누르면 즉시 지워집니다!**")
+
+# 표 깨끗하게 지우기 버튼 추가
+if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
+    st.session_state.df_data = pd.DataFrame([{"이름": "", "G핸디": 0.0, "금일타수": 0}])
+    st.rerun()
+
 st.info("💡 각 칸을 더블클릭하면 이름, 핸디, 타수를 수정할 수 있습니다.")
 
-edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+# 데이터 에디터 실행
+edited_df = st.data_editor(st.session_state.df_data, num_rows="dynamic", use_container_width=True)
+st.session_state.df_data = edited_df
 
 # 천원 단위 사사오입(반올림) 함수 정의
 def round_to_thousand(amount):
@@ -35,13 +47,18 @@ def round_to_thousand(amount):
 
 # 2. 계산 및 정산문구 생성 버튼
 if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="primary"):
-    total_players = len(edited_df)
+    # ⭐ [None 및 빈 줄 전면 필터링 안전장치]
+    # 이름이 비어있거나(None, 빈칸) 타수가 0인 유령 데이터는 계산에서 완벽히 제외합니다.
+    valid_df = edited_df.dropna(subset=["이름"])
+    valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
+    
+    total_players = len(valid_df)
     
     if total_players == 0:
-        st.error("참석자를 최소 1명 이상 입력해 주세요.")
+        st.error("참석자를 최소 1명 이상 정확히 입력해 주세요.")
     else:
         # [동타 처리 및 우선순위 정렬 규칙 반영]
-        sorted_df = edited_df.sort_values(by=["금일타수", "G핸디"], ascending=True).reset_index(drop=True)
+        sorted_df = valid_df.sort_values(by=["금일타수", "G핸디"], ascending=True).reset_index(drop=True)
         
         # 인당 기본 비용 (스크린 14,000원 + 밥값 6,900원 = 20,900원)
         base_golf = 14000
@@ -55,7 +72,7 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
         result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n\n"
         result_text += "🏆 최종 성적 및 입금 금액\n"
         
-        # 등수별 금액 할당 로직 (1등: 16,000원 고정 / 3등: 26,000원 고정)
+        # 등수별 금액 할당 로직 (1등계열: 16,000원 고정 / 꼴등계열: 26,000원 고정)
         for idx, row in sorted_df.iterrows():
             rank = idx + 1
             name = row["이름"]
@@ -72,7 +89,7 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
             elif total_players == 4:
                 if rank == 1: pay_amount = 16000
                 elif rank == 2 or rank == 3: pay_amount = 22000
-                else: pay_amount = round_to_thousand(total_budget - (16000 + 22000 * 2)) # 남은 총액 사사오입
+                else: pay_amount = round_to_thousand(total_budget - (16000 + 22000 * 2))
                 
             # 7명일 때 (상위 2명 16,000원 고정 / 하위 2명 26,000원 고정 / 중간 3명은 사사오입 계산)
             elif total_players == 7:
@@ -81,7 +98,6 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
                 elif rank == 6 or rank == 7:
                     pay_amount = 26000
                 else:
-                    # 중간 등수(3,4,5등)는 남은 금액 나누기 3 한 뒤 사사오입
                     rem_budget = total_budget - (16000 * 2) - (26000 * 2)
                     pay_amount = round_to_thousand(rem_budget / 3)
                     
@@ -89,11 +105,10 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
             else:
                 group_size = total_players // 3
                 if rank <= group_size:
-                    pay_amount = 16000  # 상위 33% 그룹 고정
+                    pay_amount = 16000
                 elif rank > total_players - group_size:
-                    pay_amount = 26000  # 하위 33% 그룹 고정
+                    pay_amount = 26000
                 else:
-                    # 중간 그룹은 남은 예산을 사사오입 정산
                     middle_players = total_players - (group_size * 2)
                     rem_budget = total_budget - (16000 * group_size) - (26000 * group_size)
                     pay_amount = round_to_thousand(rem_budget / middle_players)
