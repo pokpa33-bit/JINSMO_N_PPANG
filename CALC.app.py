@@ -8,7 +8,8 @@ st.title("⛳️ JINSMO N_PPANG 영구 마스터 정산기")
 st.success("🏦 **[총무 계좌안내] 카카오뱅크 3333358864688 박대환**")
 
 st.write("구성원의 이름, G핸디, 금일타수를 입력하면 순위와 정산 금액이 자동 계산됩니다.")
-st.write("💡 **[안내] 4인 이하 모임은 기본 N빵 정산 / 5인 이상 모임은 진스모 국밥 벌칙형 마스터 룰이 자동 적용됩니다.**")
+st.write("💡 **[하위조 상한선 락] 하위권 패널티 송금액은 최대 26,000원을 절대 넘지 않습니다.**")
+st.write("💡 **4인 이하 모임은 기본 N빵 정산 / 5인 이상 모임은 진스모 국밥 하이브리드 마스터 룰이 자동 적용됩니다.**")
 
 init_data = [
     {"이름": "홍기동", "G핸디": -0.1, "금일타수": 77},
@@ -31,6 +32,10 @@ if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
 edited_df = st.data_editor(st.session_state.df_data, num_rows="dynamic", use_container_width=True)
 st.session_state.df_data = edited_df
 
+# 1,000원 단위 사사오입 함수 정의
+def round_to_thousand(amount):
+    return int(round(amount / 1000) * 1000)
+
 if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary"):
     valid_df = edited_df.dropna(subset=["이름"])
     valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
@@ -48,14 +53,12 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
         total_meal_budget = total_players * 6900
         total_overall_budget = total_golf_budget + total_meal_budget
         
-        golf_pays = [0] * total_players
-        meal_pays = [0] * total_players
+        golf_pays = * total_players
+        meal_pays = * total_players
         
         # 📌 인원별 정산 로직 분기
         if total_players <= 4:
-            # 📢 4인 이하 자유 모임 워닝 및 기본 정산 메시지
             st.warning(f"⚠️ 금일 모임은 {total_players}명 소규모 라운딩이므로 기본 정산 방식(전원 스크린 N빵 + 국밥 각자결제)으로 계산됩니다.")
-            
             result_text = f"[진스모 새벽모임 최종 정산 안내]\n\n"
             result_text += f"금일 모임(총 {total_players}명) 소규모 N빵 정산 내역입니다.\n"
             result_text += f"원칙: 스크린비 인당 14,000원 계좌이체 / 국밥값 각자 식당 카드 결제\n\n"
@@ -65,50 +68,53 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
                 meal_pays[idx] = 6900
                 
         else:
-            # 📢 5인 이상 진스모 정식 모임 마스터 룰 워닝 및 계산 적용
-            st.info(f"🔥 5인 이상 진스모 정식 라운딩(총 {total_players}명)이 감지되었습니다! 진스모 전용 국밥 벌칙 하이브리드 정산 룰을 가동합니다.")
-            
+            st.info(f"🔥 5인 이상 진스모 정식 라운딩(총 {total_players}명)이 감지되었습니다! 최대 26,000원 상한 락 하이브리드 정산 룰을 가동합니다.")
             result_text = f"[진스모 새벽모임 최종 정산 안내]\n\n"
             result_text += f"금일 모임(총 {total_players}명) 하이브리드 마스터 정산 내역입니다.\n"
-            result_text += f"원칙: 1·2등 국밥 2그릇(13,800원) / 3등 국밥 3그릇 벌칙(20,700원) / 나머지 조원 스크린비 전액 현금 엔빵\n\n"
+            result_text += f"원칙: 1·2등 국밥 2그릇(13,800원) 결제 / 하위조 최대 26,000원 송금 상한 잠금 / 잔여금액 중간조 분담\n\n"
             
-            bottom_indices = []
+            if total_players == 5: top_count, bottom_count = 1, 2
+            elif total_players == 7: top_count, bottom_count = 2, 2
+            elif total_players == 10: top_count, bottom_count = 3, 4
+            else:
+                top_count = max(1, int(total_players * 0.3))
+                bottom_count = max(1, int(total_players * 0.3))
+                
+            middle_indices = []
+            
+            # 1차 패스: 상하위조 고정 금액 한도 적용 및 잠금
             for idx in range(total_players):
                 rank = idx + 1
-                if rank == 1 or rank == 2:
+                if rank <= top_count:
                     golf_pays[idx] = 0
-                    meal_pays[idx] = 13800
-                elif rank == 3:
-                    golf_pays[idx] = 0
-                    meal_pays[idx] = 20700
+                    meal_pays[idx] = 13800  # 상위조 13,800원 카드결제 고정
+                elif rank > (total_players - bottom_count):
+                    golf_pays[idx] = 26000  # 🛑 하위조 최대 26,000원 현금송금 고정
+                    meal_pays[idx] = 0      # 식당 카드결제 없음
                 else:
-                    bottom_indices.append(idx)
+                    middle_indices.append(idx)
+                    meal_pays[idx] = 6900   # 중간조 본인 국밥값 카드결제 기본 고정
                     
-            # 5~6인 소규모 국밥 총액 초과 버그 방지 제어 수식
-            fixed_top_meal = 13800 + 13800 + 20700
-            if fixed_top_meal > total_meal_budget:
-                meal_pays[2] = total_meal_budget - 27600
-                for idx in bottom_indices:
-                    meal_pays[idx] = 0
-            else:
-                # 8인 이상 대규모 인원 잔여 밥값 분담
-                paying_count = len(bottom_indices)
-                if paying_count > 0:
-                    remaining_meal = total_meal_budget - fixed_top_meal
-                    per_bottom_meal = int(remaining_meal / paying_count)
-                    for b_idx in bottom_indices:
-                        meal_pays[b_idx] = per_bottom_meal
-                    meal_pays[bottom_indices[-1]] = total_meal_budget - fixed_top_meal - sum(meal_pays[i] for i in bottom_indices if i != bottom_indices[-1])
+            # 2차 패스: 중간 그룹이 남은 스크린비 잔액 전액 분담
+            if middle_indices:
+                collected_golf_cash = sum(golf_pays[i] for i in range(total_players) if i not in middle_indices)
+                remaining_golf = total_golf_budget - collected_golf_cash
+                per_middle_golf = int(remaining_golf / len(middle_indices))
+                
+                for m_idx in middle_indices:
+                    golf_pays[m_idx] = per_middle_golf
                     
-            # 하위권 스크린비 엔빵 역산
-            paying_golf_count = len(bottom_indices)
-            if paying_golf_count > 0:
-                per_golf = int(total_golf_budget / paying_golf_count)
-                for b_idx in bottom_indices:
-                    golf_pays[b_idx] = per_golf
-                golf_pays[bottom_indices[-1]] = total_golf_budget - sum(golf_pays[i] for i in range(total_players) if i != bottom_indices[-1])
+                # 현금 오차 0원 정밀 보정
+                last_middle_idx = middle_indices[-1]
+                golf_pays[last_middle_idx] = total_golf_budget - sum(golf_pays[i] for i in range(total_players) if i != last_middle_idx)
+                
+                # 3차 패스: 식당 카드결제 영수증 오차 0원 정밀 보정
+                card_indices = list(range(0, total_players - bottom_count))
+                last_card_idx = card_indices[-1] if card_indices else 0
+                other_card_sum = sum(meal_pays[i] for i in range(total_players) if i != last_card_idx)
+                meal_pays[last_card_idx] = total_meal_budget - other_card_sum
 
-        # 공통 매장 지출 출력 빌드
+        # 공통 실제 지출 금액 출력 빌드
         result_text += f"💰 [금일 매장 실제 지출 총액]\n"
         result_text += f"  - 스크린골프 총액: {total_golf_budget:,}원\n"
         result_text += f"  - 식사(국밥) 총액: {total_meal_budget:,}원 (정확히 실제 {total_players}그릇 실비 마감)\n"
@@ -128,27 +134,22 @@ if st.button("🏆 진스모 하이브리드 정산문구 생성", type="primary
             if total_players <= 4:
                 result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [ 14,000원 ] 송금 💵 + 국밥값 [ 6,900원 ] 식당 카드결제\n"
             else:
-                bowl_str = "2그릇 고정 👑" if rank <= 2 else ("3그릇 벌칙 절대고정 🚨" if m_p == 20700 else "잔여 벌칙 마감 조 🛠️")
                 if g_p == 0:
-                    if m_p > 0:
-                        result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [0원 면제] 🎉 + 국밥 {bowl_str} {m_p:,}원 [식당 카드결제]\n"
-                    else:
-                        result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [0원 면제] 🎉 + 국밥값 [0원 면제] (기부버프 혜택)\n"
+                    result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 스크린비 [0원 면제] 🎉 + 국밥값 {m_p:,}원 [식당 카드결제]\n"
+                elif m_p == 0:
+                    result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 총무 계좌로 스크린비 [ {g_p:,}원 ] 송금 💵 (식당 결제 없음 ❌) (상한가 잠금 락 적용)\n"
                 else:
-                    if m_p > 0:
-                        result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 총무 계좌로 스크린비 [ {g_p:,}원 ] 송금 💵 + 국밥값 {m_p:,}원 [식당 카드결제]\n"
-                    else:
-                        result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 총무 계좌로 스크린비 [ {g_p:,}원 ] 송금 💵 (식당 결제 없음 ❌)\n"
+                    result_text += f"  - {rank}등: {name} (타수:{score}/핸디:{handi}) ➡️ 총무 계좌로 스크린비 [ {g_p:,}원 ] 송금 💵 + 국밥값 {m_p:,}원 [식당 카드결제]\n"
             cash_total += g_p
             card_total += m_p
                 
         result_text += f"\n📊 [총무 정산 검증 테이블]\n"
-        result_text += f"  - 실제 걷히는 현금 총액: {cash_total:,}원 (스크린비 총액과 오차 0원 완벽 일치!)\n"
-        result_text += f"  - 실제 식당 카드 결제 총액: {card_total:,}원 (국밥 대금 총액과 오차 0원 완벽 일치!)\n"
-        result_text += f"  👉 정산 결과: 총무 주머니에 남거나 모자라는 현금은 정확히 [ 0원 ] 입니다.\n"
+        result_text += f"  - 실제 걷히는 현금 총액: {cash_total:,}원 (스크린비 총액 {total_golf_budget:,}원과 오차 0원 완벽 일치!)\n"
+        result_text += f"  - 실제 식당 카드 결제 총액: {card_total:,}원 (국밥 대금 {total_meal_budget:,}원과 오차 0원 완벽 일치!)\n"
+        result_text += f"  👉 정산 결과: 하위 그룹의 최대 지출액이 26,000원으로 완벽하게 제어되었으며 총무 장부 차액은 [ 0원 ] 입니다.\n"
         result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
-        result_text += "\n⚠️ 식당 카드결제 금액이 표시된 분들은 계산대에서 본인 금액을 말씀하시고 개별 카드로 긁으시면 오늘 정산은 완벽히 마감됩니다."
+        result_text += "\n⚠️ 식당 카드결제 안내를 받으신 분들은 계산대에서 본인 적힌 금액만큼 각자 카드로 긁으시면 오늘 정산은 완벽 마감됩니다."
         
         st.subheader("✨ 자동 정산 결과")
         st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=450)
-        st.success("4인 이하 프리스타일 및 5인 이상 마스터 룰 하이브리드 세팅이 전면 완료되었습니다!")
+        st.success("하위조 26,000원 상한 락 하이브리드 정산 시스템 세팅이 최종 완료되었습니다!")
