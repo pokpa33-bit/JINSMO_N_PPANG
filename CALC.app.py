@@ -39,7 +39,7 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
         
         # 카톡 공유용 결과 텍스트 빌드 시작
         result_text = f"[진스모 새벽모임 정산 안내]\n\n"
-        result_text += f"금일 모임(총 {total_players}명) 스크린골프비 및 밥값 일괄 정산 내역입니다.\n"
+        result_text += f"금일 모임(총 {total_players}명) 스크탈골프비 및 밥값 일괄 정산 내역입니다.\n"
         result_text += f"총액: {total_budget:,}원 (인당 기본 {total_per_person:,}원 산정)\n"
         result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n\n"
         result_text += "🏆 최종 성적 및 입금 금액\n"
