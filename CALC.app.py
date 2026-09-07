@@ -10,9 +10,9 @@ st.write("💡 **동타일 경우 G핸디가 낮은 사람이 우선순위가 �
 
 # 1. 초기 샘플 데이터 세팅 (마우스로 행 추가 및 삭제 가능)
 init_data = [
-    {"이름": "회원1", "G핸디": 5.0, "금일타수": 80},
-    {"이름": "회원2", "G핸디": 3.0, "금일타수": 85},
-    {"이름": "회원3", "G핸디": 4.5, "금일타수": 80}
+    {"이름": "회원1", "G핸디": 5.2, "금일타수": 78},
+    {"이름": "회원2", "G핸디": 3.1, "금일타수": 82},
+    {"이름": "회원3", "G핸디": 4.5, "금일타수": 78}
 ]
 df = pd.DataFrame(init_data)
 
@@ -53,14 +53,20 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
             
             # 7명 모임일 때 대화방 이미지 규칙 적용
             if total_players == 7:
-                if rank in: pay_amount = 16000
-                elif rank in: pay_amount = 21000
-                else: pay_amount = 25650
+                if rank in:
+                    pay_amount = 16000
+                elif rank in:
+                    pay_amount = 21000
+                else:
+                    pay_amount = 25650
             # 4명 모임일 때 대화방 이미지 규칙 적용
             elif total_players == 4:
-                if rank == 1: pay_amount = 16000
-                elif rank in: pay_amount = 21000
-                else: pay_amount = 25600
+                if rank == 1:
+                    pay_amount = 16000
+                elif rank in:
+                    pay_amount = 21000
+                else:
+                    pay_amount = 25600
             # 그 외 인원은 기본 균등 금액 적용 (당일 조율용)
             else:
                 pay_amount = total_per_person
