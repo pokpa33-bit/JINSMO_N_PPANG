@@ -20,7 +20,6 @@ init_data = [
     {"이름": "박두진", "G핸디": -0.4, "금일타수": 77}
 ]
 
-# 세션 상태를 활용해 데이터 보존 및 초기화 기능 구현
 if "df_data" not in st.session_state:
     st.session_state.df_data = pd.DataFrame(init_data)
 
@@ -30,14 +29,12 @@ st.subheader("📋 참석자 명단 입력")
 st.error("🚨 **[필독] 인원 추가 방법: 명단 표 맨 아래 왼쪽의 [+] 버튼을 누르면 줄이 늘어납니다!**")
 st.warning("🗑️ **[필독] 실수로 만든 줄 삭제 방법: 지우고 싶은 줄(행)을 마우스나 손가락으로 한 번 터치(선정)한 후, 키보드의 [Delete] 또는 [Backspace] 키를 누르면 즉시 지워집니다!**")
 
-# 표 깨끗하게 지우기 버튼 추가
 if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
     st.session_state.df_data = pd.DataFrame([{"이름": "", "G핸디": 0.0, "금일타수": 0}])
     st.rerun()
 
 st.info("💡 각 칸을 더블클릭하면 이름, 핸디, 타수를 수정할 수 있습니다.")
 
-# 데이터 에디터 실행
 edited_df = st.data_editor(st.session_state.df_data, num_rows="dynamic", use_container_width=True)
 st.session_state.df_data = edited_df
 
@@ -47,8 +44,6 @@ def round_to_thousand(amount):
 
 # 2. 계산 및 정산문구 생성 버튼
 if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="primary"):
-    # ⭐ [None 및 빈 줄 전면 필터링 안전장치]
-    # 이름이 비어있거나(None, 빈칸) 타수가 0인 유령 데이터는 계산에서 완벽히 제외합니다.
     valid_df = edited_df.dropna(subset=["이름"])
     valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
     
@@ -72,7 +67,7 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
         result_text += f"정렬 기준: 금일타수 기준 (동타 시 G핸디가 낮은 사람 우선)\n\n"
         result_text += "🏆 최종 성적 및 입금 금액\n"
         
-        # 등수별 금액 할당 로직 (1등계열: 16,000원 고정 / 꼴등계열: 26,000원 고정)
+        # 등수별 금액 할당 로직 (요청 반영: 4인 기준 하위 26,000원 절대 고정)
         for idx, row in sorted_df.iterrows():
             rank = idx + 1
             name = row["이름"]
@@ -85,11 +80,11 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
                 elif rank == 2: pay_amount = 22000
                 else: pay_amount = 26000
                 
-            # 4명일 때 (1등: 16,000 / 2,3등: 22,000 / 4등: 26,000 하되 차액 1000원 단위 사사오입)
+            # ⭐ 4명일 때 (요청 반영: 하위 순위 무조건 26,000원 고정 구조)
             elif total_players == 4:
                 if rank == 1: pay_amount = 16000
                 elif rank == 2 or rank == 3: pay_amount = 22000
-                else: pay_amount = round_to_thousand(total_budget - (16000 + 22000 * 2))
+                else: pay_amount = 26000  # 4등 26,000원 무조건 고정
                 
             # 7명일 때 (상위 2명 16,000원 고정 / 하위 2명 26,000원 고정 / 중간 3명은 사사오입 계산)
             elif total_players == 7:
