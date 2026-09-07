@@ -51,19 +51,19 @@ if st.button("🏆 순위 산정 및 카톡 정산문구 만들기", type="prima
             handi = row["G핸디"]
             score = row["금일타수"]
             
-            # 7명 모임일 때 대화방 이미지 규칙 적용
+            # 7명 모임일 때 대화방 이미지 규칙 적용 (1~2등 / 3~5등 / 6~7등)
             if total_players == 7:
-                if rank in:
+                if rank == 1 or rank == 2:
                     pay_amount = 16000
-                elif rank in:
+                elif rank == 3 or rank == 4 or rank == 5:
                     pay_amount = 21000
                 else:
                     pay_amount = 25650
-            # 4명 모임일 때 대화방 이미지 규칙 적용
+            # 4명 모임일 때 대화방 이미지 규칙 적용 (1등 / 2~3등 / 4등)
             elif total_players == 4:
                 if rank == 1:
                     pay_amount = 16000
-                elif rank in:
+                elif rank == 2 or rank == 3:
                     pay_amount = 21000
                 else:
                     pay_amount = 25600
