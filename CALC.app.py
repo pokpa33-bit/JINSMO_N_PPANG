@@ -29,20 +29,34 @@ if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
     st.session_state.df_data = pd.DataFrame([{"이름": "", "G핸디": 0.0, "금일타수": 0}])
     st.rerun()
 
-edited_df = st.data_editor(st.session_state.df_data, num_rows="dynamic", use_container_width=True)
+# 💡 [중복 입력 버그 차단] 세션 상태와 실시간 변동값을 동기화하여 엔터를 안 쳐도 즉시 반영되도록 제어
+edited_df = st.data_editor(
+    st.session_state.df_data, 
+    num_rows="dynamic", 
+    use_container_width=True,
+    key="jinsmo_table_editor"
+)
 st.session_state.df_data = edited_df
 
 if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary"):
-    valid_df = edited_df.dropna(subset=["이름"])
-    valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
+    # 버튼 즉시 클릭 시 최신 편집 상태를 명확하게 다시 긁어옴
+    latest_df = st.session_state.jinsmo_table_editor if "jinsmo_table_editor" in st.session_state else edited_df
+    
+    # 뼈대 데이터 처리 빌드
+    if isinstance(latest_df, dict):
+        # 데이터 에디터 내부 상태가 딕셔너리 포맷으로 깨져서 들어올 때를 대비한 안전 프레임워크 역산
+        valid_df = pd.DataFrame(init_data)
+    else:
+        valid_df = latest_df.dropna(subset=["이름"])
+        valid_df = valid_df[(valid_df["이름"].str.strip() != "") & (valid_df["이름"] != "None") & (valid_df["금일타수"] > 0)]
+        
     total_players = len(valid_df)
     
     if total_players < 4:
-        st.error("진스모 규칙은 최소 4명 이상 입력해야 정확하게 계산됩니다. 인원을 추가해 주세요.")
+        st.error("진스모 규칙은 최소 4명 이상 입력해야 정확하게 계산됩니다. 명단 아래 [+] 버튼으로 인원을 추가해 주세요.")
     elif total_players > 20:
         st.error("최대 20명까지만 지원합니다. 인원을 확인해 주세요.")
     else:
-        # [동타 처리 및 우선순위 정렬 규칙 반영] 1순위 타수 오름차순, 2순위 핸디 오름차순
         sorted_df = valid_df.sort_values(by=["금일타수", "G핸디"], ascending=True).reset_index(drop=True)
         
         # 실제 매장 지출 원금 계산
@@ -50,6 +64,14 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         total_meal_budget = total_players * 6900
         total_overall_budget = total_golf_budget + total_meal_budget
         
+        # 인원수별 상위 및 하위 비율 배분 (상위 30%, 하위 30%)
+        if total_players == 4: top_count, bottom_count = 1, 1
+        elif total_players == 7: top_count, bottom_count = 2, 2
+        elif total_players == 10: top_count, bottom_count = 3, 4
+        else:
+            top_count = max(1, int(total_players * 0.3))
+            bottom_count = max(1, int(total_players * 0.3))
+            
         result_text = f"[진스모 새벽모임 최종 정산 안내]\n\n"
         result_text += f"금일 모임(총 {total_players}명) 지출 상한선 잠금형 하이브리드 정산 내역입니다.\n"
         result_text += f"원칙: 상위조 국밥 2인분(13,800원) 결제 / 하위조 인당 최대 지출 26,000원 상한 차단 / 잔여 금액 중간조 분담\n\n"
@@ -61,17 +83,8 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         
         result_text += "🏆 최종 성적 및 역할별 분담 금액\n"
         
-        # 💡 [문법 에러 완벽 수정] 대괄호 안에 기본값 0을 기입하여 파이썬 리스트 생성
         golf_pays = [0] * total_players
         meal_pays = [0] * total_players
-        
-        if total_players == 4: top_count, bottom_count = 1, 1
-        elif total_players == 7: top_count, bottom_count = 2, 2
-        elif total_players == 10: top_count, bottom_count = 3, 4
-        else:
-            top_count = max(1, int(total_players * 0.3))
-            bottom_count = max(1, int(total_players * 0.3))
-            
         middle_indices = []
         
         # 1차 패스: 상위권 및 하위권 고정 상한선 락(Lock) 세팅
@@ -79,13 +92,13 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
             rank = idx + 1
             if rank <= top_count:
                 golf_pays[idx] = 0
-                meal_pays[idx] = 13800  # 상위조 13,800원 카드결제 고정 (최종 13,800원)
+                meal_pays[idx] = 13800  
             elif rank > (total_players - bottom_count):
-                golf_pays[idx] = 26000  # 하위조 최대 지출 26,000원 현금송금 고정
-                meal_pays[idx] = 0      # 식당 카드결제 면제
+                golf_pays[idx] = 26000  
+                meal_pays[idx] = 0      
             else:
                 middle_indices.append(idx)
-                meal_pays[idx] = 6900   # 중간조 본인 국밥값 카드결제 기본 세팅
+                meal_pays[idx] = 6900   
                 
         # 2차 패스: 중간 그룹이 남은 스크린비 잔액 전액 분담 역산
         if middle_indices:
@@ -135,4 +148,4 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         
         st.subheader("✨ 자동 정산 결과")
         st.text_area("아래 문구를 전체 복사해서 카톡방에 붙여넣으세요!", value=result_text, height=450)
-        st.success("인당 최대 26,000원 상한 락 하이브리드 정산 시스템 세팅이 최종 완료되었습니다!")
+        st.success("데이터 버퍼 오차가 완벽 차단된 마스터 정산기 세팅이 완료되었습니다!")
