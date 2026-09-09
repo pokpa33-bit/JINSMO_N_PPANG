@@ -3,8 +3,8 @@ import pandas as pd
 
 st.set_page_config(page_title="진스모 정산기", layout="centered", page_icon="⛳️")
 
-# 웹사이트 상단 타이틀 및 설명
-st.title("⛳️ JINSMO N_PPANG 영구 마스터 정산기")
+# 💡 [제목 수정 완료] 형님 지시대로 불필요한 수식어를 빼고 직관적으로 정돈했습니다.
+st.title("⛳️ JINSMO N_PPANG 정산기")
 st.success("🏦 **[총무 계좌안내] 카카오뱅크 3333358864688 박대환**")
 
 st.write("구성원의 이름, G핸디, 금일타수를 입력하면 순위와 정산 금액이 자동 계산됩니다.")
@@ -29,7 +29,7 @@ if st.button("🔄 표 전체 초기화 (새로 쓰기)"):
     st.session_state.df_data = pd.DataFrame([{"이름": "", "G핸디": 0.0, "금일타수": 0}])
     st.rerun()
 
-# 💡 [중복 입력 버그 차단] 세션 상태와 실시간 변동값을 동기화하여 엔터를 안 쳐도 즉시 반영되도록 제어
+# [중복 입력 버그 차단] 세션 상태와 실시간 변동값을 동기화하여 엔터를 안 쳐도 즉시 반영되도록 제어
 edited_df = st.data_editor(
     st.session_state.df_data, 
     num_rows="dynamic", 
@@ -44,7 +44,6 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
     
     # 뼈대 데이터 처리 빌드
     if isinstance(latest_df, dict):
-        # 데이터 에디터 내부 상태가 딕셔너리 포맷으로 깨져서 들어올 때를 대비한 안전 프레임워크 역산
         valid_df = pd.DataFrame(init_data)
     else:
         valid_df = latest_df.dropna(subset=["이름"])
@@ -142,7 +141,7 @@ if st.button("🏆 진스모 상한선 락 정산문구 생성", type="primary")
         result_text += f"\n📊 [총무 정산 검증 테이블 (오차 점검)]\n"
         result_text += f"  - 회원 송금액 합계: {cash_total:,}원 ➡️ 매장 원금({total_golf_budget:,}원)과 오차 [ 0원 ] 완벽 일치!\n"
         result_text += f"  - 회원 카드 결제 합계: {card_total:,}원 ➡️ 식당 원금({total_meal_budget:,}원)과 오차 [ 0원 ] 완벽 일치!\n"
-        result_text += f"  👉 최종 정산 결과: 진스모 인당 최대 지출액이 26,000원 선에서 철저히 잠금 관리되며 총무 장부 차액은 정확히 [ 0원 ] 입니다.\n"
+        result_text += f"  👉 최종 정산 결과: 진스모 인당 최종 지출액이 26,000원 선에서 철저히 잠금 관리되며 총무 장부 차액은 정확히 [ 0원 ] 입니다.\n"
         result_text += "\n🏦 입금 계좌: 카카오뱅크 3333358864688 박대환"
         result_text += "\n⚠️ 식당 계산대에서는 전원이 계산대에 본인 이름 옆에 적힌 정확한 금액을 말씀하시고 개별 카드로 긁으시면 오늘 정산은 완벽히 마감됩니다."
         
